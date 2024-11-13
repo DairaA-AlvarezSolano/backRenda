@@ -236,8 +236,6 @@ app.get('/api/ganancias/dia', (req, res) => {
     );
 });
 
-// Ruta para obtener las órdenes diarias
-
 app.get('/api/ordenes/dia', (req, res) => {
     const diaSeleccionado = req.query.dia;
     if (!diaSeleccionado) {
