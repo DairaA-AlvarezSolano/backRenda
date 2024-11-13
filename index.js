@@ -75,7 +75,7 @@ app.get('/api/productos', (req, res) => {
         res.status(200).json(rows);
     });
 });
-//Obtener ganancias ppor mes
+//Obtener ganancias por mes
 app.get('/api/ganancias', (req, res) => {
     const mesSeleccionado = req.query.mes;
 
@@ -209,6 +209,70 @@ app.get('/api/ordenes', (req, res) => {
         }
     );
 });
+
+// Ruta para obtener las ganancias diarias
+app.get('/api/ganancias/dia', (req, res) => {
+    const diaSeleccionado = req.query.dia;
+
+    if (!diaSeleccionado) {
+        return res.status(400).json({ error: 'Día no proporcionado' });
+    }
+
+    db.all(
+        `SELECT 
+            strftime('%Y-%m-%d', fecha) AS dia, 
+            SUM(costo_total) AS ganancias_diarias
+        FROM productos_vendidos 
+        WHERE strftime('%Y-%m-%d', fecha) = ? 
+        GROUP BY dia`,
+        [diaSeleccionado],
+        (err, rows) => {
+            if (err) {
+                return res.status(500).json({ error: 'Error en la base de datos' });
+            }
+            const totalGanancias = rows.length > 0 ? rows[0].ganancias_diarias : 0;
+            res.json({ totalGanancias });
+        }
+    );
+});
+
+app.get('/api/ordenes/dia', (req, res) => {
+    const diaSeleccionado = req.query.dia;
+    if (!diaSeleccionado) {
+        console.error('Día no proporcionado');
+        return res.status(400).json({ error: 'Día no proporcionado' });
+    }
+    db.all(
+        `SELECT 
+            id, 
+            producto_id,
+            cantidad,
+            fecha, 
+            precio, 
+            costo_total 
+        FROM productos_vendidos 
+        WHERE strftime('%Y-%m-%d', fecha) = ?`,
+        [diaSeleccionado],
+        (err, rows) => {
+            if (err) {
+                console.error('Error en la base de datos:', err);
+                return res.status(500).json({ error: 'Error en la base de datos' });
+            }
+            if (rows.length === 0) {
+                // En vez de error, enviar una advertencia con código 200
+                return res.status(200).json({
+                    warning: 'No se encontraron órdenes para la fecha seleccionada.',
+                    ordenes: []  // Array vacío de órdenes
+                });
+            }
+
+            // Si hay órdenes, se devuelven normalmente
+            res.json({ ordenes: rows });
+        }
+    );
+});
+
+
 
 const PORT = 4000;
 app.listen(PORT, () => {
