@@ -237,45 +237,6 @@ app.get('/api/ganancias/dia', (req, res) => {
 });
 
 // Ruta para obtener las órdenes diarias
-// app.get('/api/ordenes/dia', (req, res) => {
-//     const diaSeleccionado = req.query.dia;
-
-//     // Verificar que la fecha fue pasada correctamente
-//     if (!diaSeleccionado) {
-//         console.error('Día no proporcionado');
-//         return res.status(400).json({ error: 'Día no proporcionado' });
-//     }
-
-//     console.log('Fecha seleccionada para órdenes:', diaSeleccionado);  // Verificar el valor de la fecha
-
-//     db.all(
-//         `SELECT 
-//             id, 
-//             producto_id,
-//             cantidad,
-//             fecha, 
-//             precio, 
-//             costo_total 
-//         FROM productos_vendidos 
-//         WHERE strftime('%Y-%m-%d', fecha) = ?`,
-//         [diaSeleccionado],
-//         (err, rows) => {
-//             if (err) {
-//                 console.error('Error en la base de datos:', err);
-//                 return res.status(500).json({ error: 'Error en la base de datos' });
-//             }
-
-//             // Verificar si hay registros
-//             console.log('Órdenes encontradas:', rows);
-
-//             if (rows.length === 0) {
-//                 return res.status(404).json({ error: 'No se encontraron órdenes para esa fecha' });
-//             }
-
-//             res.json({ ordenes: rows });
-//         }
-//     );
-// });
 
 app.get('/api/ordenes/dia', (req, res) => {
     const diaSeleccionado = req.query.dia;
