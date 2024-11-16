@@ -4,7 +4,19 @@ const cors = require('cors');
 
 const app = express();
 const db = new sqlite3.Database('./tienda.db');
-
+const dayjs = require('dayjs');
+const fechaActual = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" });
+const fechaLocal = (() => {
+    const fecha = new Date();
+    const año = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const horas = String(fecha.getHours()).padStart(2, '0');
+    const minutos = String(fecha.getMinutes()).padStart(2, '0');
+    const segundos = String(fecha.getSeconds()).padStart(2, '0');
+    
+    return `${año}-${mes}-${dia} ${horas}:${minutos}:${segundos}`;
+  })();
 app.use(express.json());
 app.use(cors());
 
@@ -47,15 +59,15 @@ db.serialize(() => {
 app.post('/api/productos', (req, res) => {
     const { nombre, precio, cantidad, categoria, imagen } = req.body;
 
-    const query = `INSERT INTO productos (nombre, precio, cantidad, categoria, imagen) VALUES (?, ?, ?, ?, ?)`;
-    db.run(query, [nombre, precio, cantidad, categoria, imagen], function (err) {
+    const query = `INSERT INTO productos (nombre, precio, cantidad, categoria, imagen, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?)`;
+    db.run(query, [nombre, precio, cantidad, categoria, imagen, fechaLocal], function (err) {
         if (err) {
             return res.status(400).json({ error: 'Error al agregar el producto' });
         }
 
         // Guardar el registro de la acción
-        const registroQuery = `INSERT INTO registro_productos (producto_id, cantidad, accion) VALUES (?, ?, ?)`;
-        db.run(registroQuery, [this.lastID, cantidad, 'nuevo producto'], function (err) {
+        const registroQuery = `INSERT INTO registro_productos (producto_id, cantidad, accion, fecha) VALUES (?, ?, ?, ?)`;
+        db.run(registroQuery, [this.lastID, cantidad, 'nuevo producto', fechaLocal], function (err) {
             if (err) {
                 console.error('Error al registrar la acción:', err);
                 return res.status(500).json({ error: 'Error al registrar la acción' });
@@ -116,8 +128,8 @@ app.put('/api/productos/:id', (req, res) => {
         }
 
         // Guardar el registro de la acción
-        const registroQuery = `INSERT INTO registro_productos (producto_id, cantidad, accion) VALUES (?, ?, ?)`;
-        db.run(registroQuery, [id, cantidad, 'cantidad agregada'], function (err) {
+        const registroQuery = `INSERT INTO registro_productos (producto_id, cantidad, accion, fecha) VALUES (?, ?, ?, ?)`;
+        db.run(registroQuery, [id, cantidad, 'cantidad agregada', fechaLocal], function (err) {
             if (err) {
                 console.error('Error al registrar la acción:', err);
                 return res.status(500).json({ error: 'Error al registrar la acción' });
@@ -151,10 +163,11 @@ app.post('/api/productos/:id/vender', (req, res) => {
 
         const precioVenta = producto.precio;
         const costoTotal = precioVenta * cantidad;
+        console.log("PRODUCTOO", producto)
 
         db.run(
-            'INSERT INTO productos_vendidos (producto_id, cantidad, precio, costo_total) VALUES (?, ?, ?, ?)',
-            [id, cantidad, precioVenta, costoTotal],
+            'INSERT INTO productos_vendidos (producto_id, cantidad, precio, costo_total, fecha, nombre_producto) VALUES (?, ?, ?, ?, ?, ?)',
+            [id, cantidad, precioVenta, costoTotal, fechaLocal, producto.nombre],
             function (err) {
                 if (err) {
                     console.error('Error al registrar la venta:', err);
@@ -249,7 +262,8 @@ app.get('/api/ordenes/dia', (req, res) => {
             cantidad,
             fecha, 
             precio, 
-            costo_total 
+            costo_total,
+            nombre_producto 
         FROM productos_vendidos 
         WHERE strftime('%Y-%m-%d', fecha) = ?`,
         [diaSeleccionado],
